@@ -1,9 +1,18 @@
+; Copyright © 2014, Dylan Bijnagte All Rights Reserved.
+; The use and distribution terms for this software are covered by the
+; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
+; which can be found in the file LICENSE.txt in this distribution.
+; By using this software in any fashion, you are agreeing to be bound by
+; the terms of this license.
+; You must not remove this notice, or any other, from this software.
+
 (ns alchemist
   (:require [datomic.api :as d :refer (q)]
             [clojure.tools.logging :as log]
             [alchemist.scanner :as scanner]
             [alchemist.util :refer (version-comparator
-                                     higher-version?)]))
+                                     higher-version?
+                                     pprn-str)]))
 
 (def test-uri "datomic:mem://testdb")
 
@@ -31,7 +40,7 @@
 
 (defn install-alchemist-schema
   [conn]
-  (log/debugf "installing alchemist schema: %s" (pr-str alchemist-schema))
+  (log/debugf "installing alchemist schema: %s" (ppr-str alchemist-schema))
   @(d/transact conn alchemist-schema))
 
 (def default-config {:create true
@@ -100,7 +109,7 @@
               hash (hash-transaction transaction)]]
     (do
       (log/infof "committing: %s %s" version description)
-      (log/debugf "raw transaction: %s" (pr-str transaction))
+      (log/debugf "raw transaction: %s" (pprn-str transaction))
       @(d/transact conn (annotate-transaction version description hash transaction)))))
 
 (defn sort-by-version
@@ -133,7 +142,7 @@
         true
         (let [r (first run) h (first history)]
           (log/debugf "comparing run: %s transmutation history: %s"
-                      (prn-str r) (prn-str h))
+                      (pprn-str r) (pprn-str h))
           (if (and r
                    (= (:alchemist/version r)
                       (:alchemist/version h))
@@ -145,7 +154,7 @@
             (do
               (log/errorf
                 "verification failed! transmutation run: %s transmutation history: %s"
-                (prn-str r) (prn-str h))
+                (pprn-str r) (pprn-str h))
               false)))))))
 
 (defn handle-run
@@ -170,6 +179,6 @@
                              transmutations
                              (into (scanner/find-transmutations config))
                              sort-by-version)]
-        (log/debugf "transmutations: %s" (pr-str transmutations))
+        (log/debugf "transmutations: %s" (ppr-str transmutations))
         (let [transmutations (handle-run conn verify transmutations)]
           (when update (run-transmutations conn transmutations))))))
