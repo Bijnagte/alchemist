@@ -57,14 +57,14 @@
   [transmutation-patterns file]
   (log/infof "scanning %s for transmutations" (.getName file))
   (if (cp/jar-file? file) 
-              (transmutations-in-jar (JarFile. file) transmutation-patterns)
-              (transmutations-in-dir file transmutation-patterns)))
+    (transmutations-in-jar (JarFile. file) transmutation-patterns)
+    (transmutations-in-dir file transmutation-patterns)))
 
-(defn find-transmutations
+(defn scan
   ([config]
     (let [{:keys [cp-excludes parent-directories]} config
           transmutation-patterns (transmutation-patterns parent-directories)]
-      (find-transmutations cp-excludes transmutation-patterns)))
+      (scan cp-excludes transmutation-patterns)))
   ([cp-excludes transmutation-patterns]
     (log/info "starting scan of classpath for transmutations")
     (->>

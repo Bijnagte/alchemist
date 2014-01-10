@@ -40,25 +40,29 @@
 
 (defn install-alchemist-schema
   [conn]
-  (log/debugf "installing alchemist schema: %s" (ppr-str alchemist-schema))
+  (log/debugf "installing alchemist schema: %s" (pprn-str alchemist-schema))
   @(d/transact conn alchemist-schema))
 
 (def default-config {:create true
-                      :scan true
-                      :verify true
-                      :update true
-                      :parent-directories ["transmutations"]
-                      :cp-excludes [#".*/?jre/\S*.jar"
-                                    #".*/?clojure\S*.jar"
-                                    #".*/?datomic\S*.jar"
-                                    #".*/?guava\S*.jar"
-                                    #".*/?fressian\S*.jar"
-                                    #".*/?h2\S*.jar"
-                                    #".*/?hornetq-core\S*.jar"
-                                    #".*/?netty\S*.jar"
-                                    #".*/?slf4j\S*.jar"
-                                    #".*/?log4j\S*.jar"
-                                    #".*/?bin"]})
+                     :scan true
+                     :verify true
+                     :update true
+                     :parent-directories ["transmutations"]
+                     :cp-excludes [#".*/?jre/\S*.jar"
+                                   #".*/?asm-\S*.jar"
+                                   #".*/?clojure\S*.jar"
+                                   #".*/?commons-\S*.jar"
+                                   #".*/?jackson-\S*.jar"
+                                   #".*/?antlr-\S*.jar"
+                                   #".*/?datomic\S*.jar"
+                                   #".*/?guava\S*.jar"
+                                   #".*/?fressian\S*.jar"
+                                   #".*/?h2\S*.jar"
+                                   #".*/?hornetq-core\S*.jar"
+                                   #".*/?netty\S*.jar"
+                                   #".*/?slf4j\S*.jar"
+                                   #".*/?log4j\S*.jar"
+                                   #".*/?bin"]})
 
 (defn connect
   [uri create]
@@ -169,16 +173,17 @@
             (throw (Exception. "transmutation verification failed!"))))
         new))))
 
-  (defn transmute
-    ([uri] (transmute uri default-config))
-    ([uri config](transmute uri config nil))      
-    ([uri config transmutations]
-      (let [{:keys [create scan verify update]} config
-            conn (connect uri create)
-            transmutations (->>
-                             transmutations
-                             (into (scanner/find-transmutations config))
-                             sort-by-version)]
-        (log/debugf "transmutations: %s" (ppr-str transmutations))
-        (let [transmutations (handle-run conn verify transmutations)]
-          (when update (run-transmutations conn transmutations))))))
+(defn transmute
+  ([uri] (transmute uri default-config))
+  ([uri config](transmute uri config nil))      
+  ([uri config transmutations]
+    (let [{:keys [create scan verify update]} config
+          conn (connect uri create)
+          transmutations (-> (if scan 
+                               (into (scanner/scan config)
+                                     transmutations)
+                               transmutations)
+                           sort-by-version)]
+      (log/debugf "transmutations: %s" (pprn-str transmutations))
+      (let [transmutations (handle-run conn verify transmutations)]
+        (when update (run-transmutations conn transmutations))))))
