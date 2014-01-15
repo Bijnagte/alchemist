@@ -16,9 +16,24 @@
   (:import (java.io File)
            (java.util.jar JarFile JarEntry)))
 
-
 (def version-portion "[vV](\\d+[\\._0-9]*?)_{2}(\\w+)\\.{1}(edn|clj)")
 (def file-pattern (re-pattern (str "\\S*[/]{1}" version-portion)))
+(def parent-directories ["transmutations"]) 
+(def cp-excludes [#".*/?jre/\S*.jar"
+                  #".*/?asm-\S*.jar"
+                  #".*/?clojure\S*.jar"
+                  #".*/?commons-\S*.jar"
+                  #".*/?jackson-\S*.jar"
+                  #".*/?antlr-\S*.jar"
+                  #".*/?datomic\S*.jar"
+                  #".*/?guava\S*.jar"
+                  #".*/?fressian\S*.jar"
+                  #".*/?h2\S*.jar"
+                  #".*/?hornetq-core\S*.jar"
+                  #".*/?netty\S*.jar"
+                  #".*/?slf4j\S*.jar"
+                  #".*/?log4j\S*.jar"
+                  #".*/?bin"])
 
 (defn read-transaction
   [string]
@@ -33,7 +48,7 @@
   (let [[_ v d t] (re-matches file-pattern (.getPath resource))]
     {:alchemist/version (format-version v)
      :alchemist/description d
-     :dynamic false
+     :dynamic? false
      :transaction-fn  #(read-transaction (slurp resource))}))
 
 (defn transmutation-patterns
@@ -60,16 +75,18 @@
     (transmutations-in-jar (JarFile. file) transmutation-patterns)
     (transmutations-in-dir file transmutation-patterns)))
 
+(defn do-scan
+  [transmutation-patterns cp-excludes]
+  (log/info "starting scan of classpath for transmutations")
+  (->>
+    (cp/classpath)
+    (filter #(not (path-matches-any? cp-excludes %)))
+    (map #(scan-location transmutation-patterns %))
+    flatten
+    (map make-transmutation)))
+
 (defn scan
-  ([config]
-    (let [{:keys [cp-excludes parent-directories]} config
-          transmutation-patterns (transmutation-patterns parent-directories)]
-      (scan cp-excludes transmutation-patterns)))
-  ([cp-excludes transmutation-patterns]
-    (log/info "starting scan of classpath for transmutations")
-    (->>
-      (cp/classpath)
-      (filter #(not (path-matches-any? cp-excludes %)))
-      (map #(scan-location transmutation-patterns %))
-      flatten
-      (map make-transmutation))))
+  ([parent-directories]
+    (scan parent-directories nil))
+  ([parent-directories cp-excludes]
+    (do-scan (transmutation-patterns parent-directories) cp-excludes)))

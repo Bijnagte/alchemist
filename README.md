@@ -61,7 +61,7 @@ transmyo͞oˈtāSHn
 ```clojure
 {:alchemist/version "1.0.0a"
  :alchemist/description "initial_schema"
- :dynamic true
+ :dynamic? true
  :transaction-fn my-transaction-producing-function}
 ```
 __:alchemist/version__
@@ -70,7 +70,7 @@ A string containing "**.**" separated elements. Each element will be compared in
 __:alchemist/description__
 A description that will be annotated on the transaction.
 
-__:dynamic__
+__:dynamic?__
 If true then the transaction vector's hash will not be compared during verification.
 If false and the transaction vector's hash changes between runs then verification will fail.
 
@@ -83,27 +83,27 @@ If alchemist produces the transmutation through classpath scanning the function 
 Configuration
 -------
 ```clojure
-{:create true
- :verify true
- :update true
- :scan true
+{:create? true
+ :verify? true
+ :update? true
+ :scan? true
  :parent-directories ["transmutations"]
  :cp-excludes [#".*/?jre/\S*.jar"
                #".*/?clojure\S*.jar"
                #".*/?datomic\S*.jar"
                #".*/?bin"]}
 ```
-__:create__
-allows for creation of a database if it is not found at the provided uri
+__:create?__
+boolean, allows for creation of a database if it is not found at the provided uri
 
-__:verify__
-will cause an exception to be thrown if the transmutations up to the current version of the database do not match those found in database
+__:verify?__
+boolean, will cause an exception to be thrown if the transmutations up to the current version of the database do not match those found in database
 
-__:update__
-allows previously not run transmutations to be committed
+__:update?__
+boolean, allows previously not run transmutations to be committed
 
-__:scan__
-enables classpath scanning to discover transmutation files
+__:scan?__
+boolean, enables classpath scanning to discover transmutation files
 
 __:parent-directories__
 a vector of parent directory names to scan for transmutations
@@ -116,7 +116,7 @@ a vector of regexes to filter the classpath prior to scanning
 
 (a/transmute "datomic:mem://testdb"
              (merge a/default-config 
-                    {:create false
+                    {:create? false
                      :parent-directories ["transmutations" "sample_data"]}))
 ```
 License
