@@ -79,10 +79,20 @@
       (and entity
            (= schema (select-keys entity keys))))))
 
-(defn alchemist-schema?
+(defn alchemist-schema-installed?
   [db]
   (log/debug "verifying schema installed")
   (some (fn [schema]
           (let [entity (find-schema-attribute db (:db/ident schema))]
             (schema-matches? schema entity)))
         alchemist-schema))
+
+
+(defn ensure-alchemist-schema-installed
+  [conn install-if-missing?]
+  (let [db (current conn)]
+    (if (alchemist-schema-installed? db)
+      (log/info "alchemist schema is installed")
+      (if install-if-missing?
+        (install-alchemist-schema conn)
+        (throw (Exception. "alchemist schema must be installed!"))))))

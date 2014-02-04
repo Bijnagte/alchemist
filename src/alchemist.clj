@@ -39,7 +39,7 @@
       (version-comparator (:alchemist/version a) (:alchemist/version b)))
     transmutations))
 
-(defn current-version
+(defn find-highest-version
   [entities]
   (-> 
     entities
@@ -51,11 +51,10 @@
   [version transmutations]
   (split-with #(higher-version? (:alchemist/version %) version) transmutations))
 
-
 (defn matches-history?
   [transmutation tx-entity]
   (boolean
-    (and transmutation
+    (and (map? transmutation)
          (= (:alchemist/version transmutation)
             (:alchemist/version tx-entity))
          (or 
@@ -63,63 +62,50 @@
            (= (hash-transaction ((:transaction-fn transmutation)))
               (:alchemist/hash tx-entity))))))
 
-(defn same-transmutations?
-  [run history]
-  (log/infof "verifying %d transmutations" (count run))
-  (if-not (= (count run) (count history))
-    false ;;fail fast
-    (loop [run (sort-by-version run) history (sort-by-version history)]
-      (if (and (empty? run)
-               (empty? history))
-        true
-        (let [transmutation (first run)
-              tx-entity (first history)]
-          (log/debugf "comparing run: %s transmutation history: %s"
-                      (pprn-str transmutation) (pprn-str tx-entity))
-          (if (matches-history? transmutation tx-entity)
-            (do
-              (log/infof "verified version %s" (:alchemist/version transmutation))
-              (recur (rest run) (rest history)))
-            (do
-              (log/errorf
-                "verification failed! transmutation run: %s transmutation history: %s"
-                (pprn-str transmutation) (pprn-str tx-entity))
-              false)))))))
+(defn verify-transmutations
+  [below-current history]
+  (log/infof "verifying %d transmutations" (count below-current))
+  (loop [run (sort-by-version below-current) history (sort-by-version history)]
+    (when-not (and (empty? run)
+             (empty? history))
+      (let [transmutation (first run)
+            tx-entity (first history)]
+        (log/debugf "comparing run: %s transmutation history: %s"
+                    (pprn-str transmutation) (pprn-str tx-entity))
+        (if (matches-history? transmutation tx-entity)
+          (do
+            (log/infof "verified version %s" (:alchemist/version transmutation))
+            (recur (rest run) (rest history)))
+          (throw (Exception. (format
+                               "verification failed! transmutation run: %s transmutation history: %s"
+                               (pprn-str transmutation) (pprn-str tx-entity)))))))))
 
 (defn handle-run
   [conn verify? transmutations]
   (let [history (db/transmutation-history conn)]
     (if (empty? history)
       transmutations
-      (let [version (current-version history)
-            [new run] (split-at-version version transmutations)]
+      (let [current-version (find-highest-version history)
+            [new below-current] (split-at-version current-version transmutations)]
         (when verify?
-          (when-not (same-transmutations? run history)
-            (throw (Exception. "transmutation verification failed!"))))
+          (verify-transmutations below-current history))
         new))))
-
-(defn check-schema
-  [conn update?]
-  (let [db (db/current conn)]
-    (if-not (db/alchemist-schema? db)
-      (if update?
-        (db/install-alchemist-schema conn)
-        (throw (Exception. "alchemist schema missing!")))
-      (log/info "alchemist schema already installed"))))
 
 (defn transmute
   ([uri] (transmute uri default-config))
   ([uri config](transmute uri config nil))      
-  ([uri config transmutations]
-    (let [{:keys [create? scan? verify? update? parent-directories cp-excludes]} config
-          conn (db/connect uri create?)]
-      (check-schema conn update?)
-      (let [transmutations (-> (if scan? 
-                                 (into (scanner/scan parent-directories cp-excludes)
-                                       transmutations)
-                                 transmutations)
-                             sort-by-version)]
-        (log/debugf "transmutations: %s" (pprn-str transmutations))
-        (let [transmutations (handle-run conn verify? transmutations)]
-          (when update?
-            (run-transmutations conn transmutations)))))))
+  ([uri config provided-transmutations]
+    (let [{:keys [create? scan? verify? update? parent-directories cp-excludes]} config]
+      (when-let [transmutations (if scan? 
+                                  (into
+                                    (scanner/scan parent-directories cp-excludes)
+                                    provided-transmutations)
+                                  provided-transmutations)]
+        
+        (let [conn (db/connect uri create?)
+              transmutations (sort-by-version transmutations)]
+          (log/debugf "transmutations: %s" (pprn-str transmutations))
+          (db/ensure-alchemist-schema-installed conn update?)
+          (let [new-transmutations (handle-run conn verify? transmutations)]
+            (when update?
+              (run-transmutations conn new-transmutations))))))))

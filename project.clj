@@ -1,4 +1,4 @@
-(defproject alchemist "0.1.0"
+(defproject alchemist "0.1.1"
   :description "Database migrations for datomic"
   :url "https://github.com/Bijnagte/alchemist"
   :license {:name "Eclipse Public License"

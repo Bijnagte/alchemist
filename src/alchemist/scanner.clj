@@ -85,7 +85,7 @@
     flatten
     (map make-transmutation)))
 
-(defn scan
+(defn scan "scans the classpath for files matching the naming conventions"
   ([parent-directories]
     (scan parent-directories nil))
   ([parent-directories cp-excludes]
