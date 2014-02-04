@@ -46,3 +46,30 @@
   [version]
   (string/replace version #"[_]" "."))
 
+(defn- get-temp-id
+  [element]
+  (.idx (:db/id element)))
+
+(defn relativize-temp-ids "Replaces temp ids in a transaction with values based on
+there position in the transaction. Ids that are referenced multiple times will have
+the same relative id"
+  [transaction]
+  (loop [elements transaction
+         ids {}
+         index 0
+         result []]
+    (if-let [element (first elements)]
+      (let [temp-id (get-temp-id element)
+            relative-id (or 
+                          (get ids temp-id)
+                          index)]
+        (recur (rest elements)
+               (assoc ids temp-id relative-id)
+               (inc index)
+               (conj result (assoc element :db/id relative-id))))
+      result)))
+
+(defn hash-transaction "Returns the hash of the transaction with temp-ids replaced
+with relative values so the results are consistent."
+  [tx]
+  (hash (relativize-temp-ids tx)))

@@ -1,6 +1,8 @@
 (ns alchemist.util-test
   (:use midje.sweet
-        alchemist.util))
+        alchemist.util)
+ ; (:refer [datomic.db :as d])
+  (:import (datomic.db.DbId)))
 
 (tabular
   (fact "versions compare correctly"
@@ -34,3 +36,52 @@
   "1.0_"   "1.0."
   "a_1-b"  "a.1-b"
   )
+ 
+ (facts "relativize-temp-ids uses index unless except when referenced multiple times"
+       (let [transaction [{:db/id #db/id[:db.part/db ]}
+                          {:db/id #db/id[:db.part/db -1]}
+                          {:db/id #db/id[:db.part/db]}
+                          {:db/id #db/id[:db.part/db  -1]}
+                          {:db/id #db/id[:db.part/db]}]
+             nth-id (fn [vector pos]
+                      (:db/id (nth vector pos)))]
+         (nth-id (relativize-temp-ids transaction) 0) => 0
+         (nth-id (relativize-temp-ids transaction) 1) => 1
+         (nth-id (relativize-temp-ids transaction) 2) => 2
+         (nth-id (relativize-temp-ids transaction) 3) => 1
+         (nth-id (relativize-temp-ids transaction) 4) => 4
+         ))
+ 
+ (facts "about transaction hashes"
+        (let [transaction-1 [{:db/id #db/id[:db.part/db]}
+                            {:db/id #db/id[:db.part/db]}]
+              transaction-2 [{:db/id #db/id[:db.part/db]}
+                            {:db/id #db/id[:db.part/db]}]]
+        
+          (fact "reader generated temp-ids cause hashes to be different" 
+            (= 
+              (hash transaction-1)
+              (hash transaction-2))
+            => false)
+        
+          (fact "when they are made relative the hashes are the same"
+            (= (hash-transaction transaction-1)
+               (hash-transaction transaction-2))
+            => true))
+        
+        (let [transaction-3 [{:db/id #db/id[:db.part/db]
+                              :db/ident :test/attribute
+                              :db/valueType :db.type/string
+                              :db/cardinality :db.cardinality/one
+                              :db.install/_attribute :db.part/db}]
+              transaction-4 [{:db/valueType :db.type/string
+                              :db/id #db/id[:db.part/db]
+                              :db/ident :test/attribute
+                              :db.install/_attribute :db.part/db
+                              :db/cardinality :db.cardinality/one}]]
+
+          (fact "key order doesn't matter in the hash"
+                (= (hash-transaction transaction-3)
+                   (hash-transaction transaction-4))
+                => true)))
+        

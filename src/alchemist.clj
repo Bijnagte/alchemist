@@ -12,9 +12,8 @@
             [alchemist.scanner :as scanner]
             [alchemist.util :refer (version-comparator
                                      higher-version?
-                                     pprn-str)]))
-
-(def test-uri "datomic:mem://testdb")
+                                     pprn-str
+                                     hash-transaction)]))
 
 (def default-config {:create? true
                      :scan? true
@@ -22,20 +21,6 @@
                      :update? true
                      :parent-directories scanner/parent-directories
                      :cp-excludes scanner/cp-excludes})
-
-(defn relativize-temp-id
-  [base-index element]
-  (assoc element :db/id (- (.idx (:db/id element)) base-index)))
-
-(defn relativize-temp-ids
-  [transaction]
-  (let [[{first-id :db/id}] transaction
-        index (.idx first-id)]
-    (map #(relativize-temp-id index %) transaction)))
-
-(defn hash-transaction
-  [tx]
-  (-> tx relativize-temp-ids hash))
 
 (defn run-transmutations
   [conn transmutations]
