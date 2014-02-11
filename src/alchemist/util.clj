@@ -20,17 +20,19 @@
 
 (defn version-comparator
   [a b]
-  (loop [a (string/split a #"[\.]") b (string/split b #"[\.]")]
-    (let [c (compare (first a) (first b))]
-      (if (or
-            (not= 0 c)
-            (and (empty? a) (empty? b)))
-        c
-        (recur (rest a) (rest b))))))
+  (if (or (nil? a) (nil? b))
+    (compare a b)
+    (loop [a (string/split a #"[\.]") b (string/split b #"[\.]")]
+      (let [c (compare (first a) (first b))]
+        (if (or
+              (not= 0 c)
+              (and (empty? a) (empty? b)))
+          c
+          (recur (rest a) (rest b)))))))
 
 (defn higher-version?
   [a b]
-  (= 1 (version-comparator a b)))
+  (pos? (version-comparator a b)))
 
 (defn matches-any?
   [regexes string]

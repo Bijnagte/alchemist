@@ -119,6 +119,16 @@ a vector of regexes to filter the classpath prior to scanning
                     {:create? false
                      :parent-directories ["transmutations" "sample_data"]}))
 ```
+
+Classpath Scanning
+-----------------
+__File Naming Rules__
+* start with the letter "v" (case doesn't matter)
+* followed by dot "." or under-bar "_" separated version segments (under-bars will be translated into dots at runtime)
+* followed by a double under-bar "__"
+* followed by a description string
+* ending with a ".edn" or ".clj" extension 
+
 License
 -------
 Copyright © 2013 Dylan Bijnagte

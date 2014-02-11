@@ -1,3 +1,10 @@
+; Copyright © 2014, Dylan Bijnagte All Rights Reserved.
+; The use and distribution terms for this software are covered by the
+; Eclipse Public License 1.0 (http://www.eclipse.org/legal/epl-v10.html)
+; which can be found in the file LICENSE.txt in this distribution.
+; By using this software in any fashion, you are agreeing to be bound by
+; the terms of this license.
+; You must not remove this notice, or any other, from this software.
 (ns alchemist.db
     (:require [datomic.api :as d :refer (q)]
               [clojure.tools.logging :as log]
@@ -82,10 +89,10 @@
 (defn alchemist-schema-installed?
   [db]
   (log/debug "verifying schema installed")
-  (some (fn [schema]
-          (let [entity (find-schema-attribute db (:db/ident schema))]
-            (schema-matches? schema entity)))
-        alchemist-schema))
+  (boolean (some (fn [schema]
+                  (let [entity (find-schema-attribute db (:db/ident schema))]
+                    (schema-matches? schema entity)))
+                alchemist-schema)))
 
 
 (defn ensure-alchemist-schema-installed

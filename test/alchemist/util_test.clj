@@ -1,23 +1,51 @@
 (ns alchemist.util-test
+  (:require [datomic.api])
   (:use midje.sweet
-        alchemist.util)
- ; (:refer [datomic.db :as d])
-  (:import (datomic.db.DbId)))
+        alchemist.util))
+
+
+(facts "about version-comparator"  
+  (tabular
+   (fact "versions compare as expected"
+         (version-comparator ?version-a ?version-b) => ?expected)
+   ?version-a    ?version-b    ?expected
+   "0"           "1"            neg?
+   "1"           "0"            pos?
+   "1"           "1"            0
+   "0.1"         "0.2"          neg?
+   "0.19"        "0.2"          neg?
+   "0.2"         "0.2"          0
+   "0.20"        "0.2"          pos?
+   "0.2.1"       "0.2.0"        pos?
+   "0.2a"        "0.2b"         neg?
+   "20.0"        "1.1"          pos?
+   "20.0"        "0.9.1"        pos?
+   "0.1.2.3.4.5.6.7.8.9.1" "0.1.2.3.4.5.6.7.8.9.0" 1
+   )
+  (fact "it handles nil gracefully"
+    (version-comparator "1.0" nil)
+    => pos?
+    
+    (version-comparator nil "1.0")
+    => neg?
+    
+    (version-comparator nil nil)
+    => 0))
 
 (tabular
-  (fact "versions compare correctly"
-        (version-comparator ?version-a ?version-b) => ?expected)
+  (fact "higher-version returns boolean"
+        (higher-version? ?version-a ?version-b) => ?expected)
   ?version-a    ?version-b    ?expected
-  "0"           "1"           -1
-  "1"           "0"            1
-  "1"           "1"            0
-  "0.1"         "0.2"         -1
-  "0.19"        "0.2"         -1
-  "0.2"         "0.2"          0
-  "0.20"        "0.2"          1
-  "0.2.1"       "0.2.0"        1
-  "0.2a"        "0.2b"        -1
-  "0.1.2.3.4.5.6.7.8.9.1" "0.1.2.3.4.5.6.7.8.9.0" 1
+  "0"           "1"           false
+  "1"           "0"           true
+  "1"           "1"           false
+  "0.2"         "0.2"         false
+  "0.20"        "0.2"         true
+  "0.2.1"       "0.2.0"       true
+  "0.2a"        "0.2b"        false
+  "20.0"        "1.1"         true
+  "20.0"        "0.9.1"       true
+  "0.1.2.3.4.5.6.7.8.9.1" "0.1.2.3.4.5.6.7.8.9.0" true
   )
 
  (fact "pprn-str writes a map to a string with new lines"
