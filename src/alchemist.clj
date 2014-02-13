@@ -22,7 +22,7 @@
                      :parent-directories scanner/parent-directories
                      :cp-excludes scanner/cp-excludes})
 
-(defn run-transmutations
+(defn run-transmutations "transacts a seq of transmutations"
   [conn transmutations]
   (log/infof "running %d transmutations" (count transmutations))
   (for [t transmutations
@@ -90,7 +90,7 @@
                                "verification failed! transmutation run: %s transmutation history: %s"
                                (pprn-str transmutation) (pprn-str tx-entity)))))))))
 
-(defn handle-run
+(defn handle-run 
   [conn verify? transmutations]
   (let [history (db/transmutation-history conn)]
     (log/debugf "found %d historical transmutations" (count history))

@@ -7,10 +7,10 @@
         :url "https://github.com/Bijnagte/alchemist"}
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [org.clojure/java.classpath "0.2.1"]
-                 [com.datomic/datomic-free "0.9.4384"
+                 [com.datomic/datomic-free "0.9.4532"
                   :exclusions [org.slf4j/slf4j-nop org.slf4j/slf4j-log4j12]]
                  [org.clojure/tools.logging "0.2.6"]]
   :profiles {:dev {:resource-paths ["dummy-data"]
                    :dependencies [[midje "1.6.0"]
-                                  [ch.qos.logback/logback-classic "1.0.1"]
+                                  [ch.qos.logback/logback-classic "1.0.2"]
                                   [org.codehaus.groovy/groovy "2.2.1"]]}})

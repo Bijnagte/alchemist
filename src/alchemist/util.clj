@@ -9,7 +9,8 @@
 (ns alchemist.util
   (:require [clojure.string :as string]
             [clojure.pprint :as pprint])
-  (:import (java.io StringWriter)))
+  (:import (java.io StringWriter)
+           (datomic.db.DbId)))
 
 (defn pprn-str
   [x] 
@@ -48,9 +49,12 @@
   [version]
   (string/replace version #"[_]" "."))
 
-(defn- get-temp-id
+(defn- get-id
   [element]
-  (.idx (:db/id element)))
+  (let  [{id :db/id} element]
+    (if (= (class id) datomic.db.DbId)
+      (.idx id)
+      id)))
 
 (defn relativize-temp-ids "Replaces temp ids in a transaction with values based on
 there position in the transaction. Ids that are referenced multiple times will have
@@ -58,17 +62,18 @@ the same relative id"
   [transaction]
   (loop [elements transaction
          ids {}
-         index 0
+         index -1
          result []]
     (if-let [element (first elements)]
-      (let [temp-id (get-temp-id element)
-            relative-id (or 
-                          (get ids temp-id)
-                          index)]
+      (let [id (get-id element)]
+        (let [relative-id (or
+                            (if (pos? id) id)
+                            (get ids id)
+                            index)]
         (recur (rest elements)
-               (assoc ids temp-id relative-id)
-               (inc index)
-               (conj result (assoc element :db/id relative-id))))
+               (assoc ids id relative-id)
+               (dec index)
+               (conj result (assoc element :db/id relative-id)))))
       result)))
 
 (defn hash-transaction "Returns the hash of the transaction with temp-ids replaced

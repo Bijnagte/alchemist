@@ -15,29 +15,33 @@
                       :alchemist/description "added"
                       :transaction-fn (fn [] tx-1)})
 
-#_(facts "about transmute"
-         (with-state-changes [(before :facts (d/delete-database test-uri))]
+(facts "about transmute"
+       (with-state-changes [(before :facts (d/delete-database test-uri))]
          
-           (fact "it succeeds with defaults"
-                 (boolean (transmute test-uri))
-                 =>  true)
+         (fact "it succeeds with defaults"
+               (boolean (transmute test-uri))
+               =>  true)
          
-           (fact "it fails with update disabled and new db"
-                 (transmute test-uri (assoc default-config :update? false))
-                 => (throws Exception))
+         (fact "it fails with update disabled and new db"
+               (transmute test-uri (assoc default-config :update? false))
+               => (throws Exception))
          
-           (fact "it succeeds with update disabled and there are no transmutations"
-                 (transmute test-uri {:update? false :scan? false })
-                 => nil?)
+         (fact "it succeeds with update disabled and there are no transmutations"
+               
+               (do
+                 (d/create-database test-uri)
+                 (db/install-alchemist-schema (d/connect test-uri))
+                 (transmute test-uri {:update? false :scan? false }))
+               => nil?)
          
-           (fact "it fails with create disabled and new db"
-                 (transmute test-uri (assoc default-config :create? false))
-                 => (throws Exception))
+         (fact "it fails with create disabled and new db"
+               (transmute test-uri (assoc default-config :create? false))
+               => (throws Exception))
          
-           (fact "it succeeds with create disabled and existing db"
-                 (do (d/create-database test-uri)
-                   (boolean (transmute test-uri (assoc default-config :create? false))))
-                 => true)))
+         (fact "it succeeds with create disabled and existing db"
+               (do (d/create-database test-uri)
+                 (boolean (transmute test-uri (assoc default-config :create? false))))
+               => true)))
 
 (fact "running twice with same transmutations doesn't change db"
       (do
@@ -65,8 +69,8 @@
             
             (fact
               (count second-result)
-              => 0)
-            ))))
+              => 0))))
+      (d/delete-database test-uri))
 
 (facts "abount running twice with a new transmutation"
        (do
@@ -93,7 +97,8 @@
              
              (fact
                (count second-history)
-               => 3)))))
+               => 3))))
+       (d/delete-database test-uri))
 
 (facts "about find-highest-version"
        (fact

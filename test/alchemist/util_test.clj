@@ -70,14 +70,16 @@
                           {:db/id #db/id[:db.part/db -1]}
                           {:db/id #db/id[:db.part/db]}
                           {:db/id #db/id[:db.part/db  -1]}
+                          {:db/id 687900}
                           {:db/id #db/id[:db.part/db]}]
              nth-id (fn [vector pos]
                       (:db/id (nth vector pos)))]
-         (nth-id (relativize-temp-ids transaction) 0) => 0
-         (nth-id (relativize-temp-ids transaction) 1) => 1
-         (nth-id (relativize-temp-ids transaction) 2) => 2
-         (nth-id (relativize-temp-ids transaction) 3) => 1
-         (nth-id (relativize-temp-ids transaction) 4) => 4
+         (nth-id (relativize-temp-ids transaction) 0) => -1
+         (nth-id (relativize-temp-ids transaction) 1) => -2
+         (nth-id (relativize-temp-ids transaction) 2) => -3
+         (nth-id (relativize-temp-ids transaction) 3) => -2
+         (nth-id (relativize-temp-ids transaction) 4) => 687900
+         (nth-id (relativize-temp-ids transaction) 5) => -6
          ))
  
  (facts "about transaction hashes"
